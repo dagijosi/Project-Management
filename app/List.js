@@ -3,9 +3,9 @@ import React, { useState, useCallback } from "react";
 import Cards from "./Cards";
 import { Add, Close } from "@mui/icons-material";
 import AddForm from "./AddForm";
-import { Droppable,Draggable } from "react-beautiful-dnd";
+import { Droppable, Draggable } from "react-beautiful-dnd";
 
-const List = ({ title, task, id, addNewCard, removeCard, provided, innerRef }) => {
+const List = ({ title, task, id, addNewCard, removeCard }) => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
 
   const openModal = useCallback(() => {
@@ -21,17 +21,14 @@ const List = ({ title, task, id, addNewCard, removeCard, provided, innerRef }) =
   }, [removeCard, title]);
 
   return (
-    <div
-      className="flex flex-col items-start rounded bg-gray-100 w-96 p-2 mr-16"
-    >
+    <div className="flex flex-col items-start rounded bg-gray-100 w-96 p-2 mr-16">
       <p className="text-black text-lg not-italic font-semibold capitalize">{title}</p>
       <Droppable droppableId={id}>
         {(provided) => (
           <div {...provided.droppableProps} ref={provided.innerRef}>
             {task ? (
               task.map((item, index) => (
-                
-                      <Cards tasks={item} onRemove={() => removeCard(item, title)} />
+                <Cards tasks={item} index={index} onRemove={() => handleRemoveCard(item.id)} />
               ))
             ) : null}
             {provided.placeholder}

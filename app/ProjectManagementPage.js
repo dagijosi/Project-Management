@@ -1,7 +1,13 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import List from "./List";
-import { DragDropContext, Droppable } from "react-beautiful-dnd";
+import { DragDropContext } from "react-beautiful-dnd";
+
+const LOCAL_STORAGE_KEYS = {
+  TODO: "todoCards",
+  IN_PROGRESS: "inProgressCards",
+  DONE: "doneCards",
+};
 
 const getInitialCards = (key) => {
   const savedCards = localStorage.getItem(key);
@@ -9,9 +15,10 @@ const getInitialCards = (key) => {
 };
 
 const ProjectManagementPage = () => {
-  const todoCards = getInitialCards("todoCards");
-  const inProgressCards = getInitialCards("inProgressCards");
-  const doneCards = getInitialCards("doneCards");
+  const todoCards = getInitialCards(LOCAL_STORAGE_KEYS.TODO);
+  const inProgressCards = getInitialCards(LOCAL_STORAGE_KEYS.IN_PROGRESS);
+  const doneCards = getInitialCards(LOCAL_STORAGE_KEYS.DONE);
+
   const [board, setBoard] = useState([
     { id: "1", title: "TODO", items: todoCards },
     { id: "2", title: "IN PROGRESS", items: inProgressCards },
@@ -19,9 +26,14 @@ const ProjectManagementPage = () => {
   ]);
 
   useEffect(() => {
-    localStorage.setItem("todoCards", JSON.stringify(todoCards));
-    localStorage.setItem("inProgressCards", JSON.stringify(inProgressCards));
-    localStorage.setItem("doneCards", JSON.stringify(doneCards));
+    const localStorageUpdates = {
+      [LOCAL_STORAGE_KEYS.TODO]: JSON.stringify(todoCards),
+      [LOCAL_STORAGE_KEYS.IN_PROGRESS]: JSON.stringify(inProgressCards),
+      [LOCAL_STORAGE_KEYS.DONE]: JSON.stringify(doneCards),
+    };
+    Object.entries(localStorageUpdates).forEach(([key, value]) => {
+      localStorage.setItem(key, value);
+    });
   }, [todoCards, inProgressCards, doneCards]);
 
   const updateLocalStorage = useCallback((key, items) => {
@@ -96,7 +108,6 @@ const ProjectManagementPage = () => {
     });
   };
 
-
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="bg-blue-500 h-screen p-4">
@@ -106,14 +117,14 @@ const ProjectManagementPage = () => {
           </p>
           <div className="flex flex-row">
             {board.map((item, index) => (
-                  <List
-                    key={index}
-                    title={item.title}
-                    task={item.items}
-                    id={item.id}
-                    addNewCard={addNewCard}
-                    removeCard={removeCard}
-                  />
+              <List
+                key={index}
+                title={item.title}
+                task={item.items}
+                id={item.id}
+                addNewCard={addNewCard}
+                removeCard={removeCard}
+              />
             ))}
           </div>
         </div>
