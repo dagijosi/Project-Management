@@ -6,3 +6,29 @@
       imgUrl: "/image/Profile_pic.png",
     },
   ]);
+  const addCard = (newCard) => {
+    const maxId = Math.max(...cardData.map((card) => card.id), 0);
+    newCard.id = maxId + 1;
+    setCardData((prevCardData) => {
+      const newCardData = [...prevCardData, newCard];
+      localStorage.setItem(`${title}_cardData`, JSON.stringify(newCardData));
+      return newCardData;
+    });
+  };
+  const removeCard = (id) => {
+    setCardData(cardData.filter((item) => item.id !== id));
+    const updatedCardData = cardData.filter((item) => item.id !== id);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        `${title}_cardData`,
+        JSON.stringify(updatedCardData)
+      );
+    }
+  };
+  const [cardData, setCardData] = useState([]);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedData = localStorage.getItem(`${title}_cardData`);
+      setCardData(savedData ? JSON.parse(savedData) : []);
+    }
+  }, []);

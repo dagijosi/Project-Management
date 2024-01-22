@@ -5,8 +5,7 @@ import { Add, Close } from "@mui/icons-material";
 import AddForm from "./AddForm";
 import { Droppable } from "react-beautiful-dnd";
 
-const List = ({ title }) => {
-  
+const List = ({ title, task, id, addNewCard,removeCard }) => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const openModal = () => {
     setModalIsOpen(true);
@@ -15,48 +14,17 @@ const List = ({ title }) => {
   const closeModal = () => {
     setModalIsOpen(false);
   };
-  const [cardData, setCardData] = useState([]);
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedData = localStorage.getItem(`${title}_cardData`);
-      setCardData(savedData ? JSON.parse(savedData) : []);
-    }
- }, []);
 
-  const addCard = (newCard) => {
-    const maxId = Math.max(...cardData.map((card) => card.id), 0);
-    newCard.id = maxId + 1;
-    setCardData((prevCardData) => {
-      const newCardData = [...prevCardData, newCard];
-      localStorage.setItem(`${title}_cardData`, JSON.stringify(newCardData));
-      return newCardData;
-    });
-  };
-  const removeCard = (id) => {
-    setCardData(cardData.filter((item) => item.id !== id));
-    const updatedCardData = cardData.filter((item) => item.id !== id);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(
-        `${title}_cardData`,
-        JSON.stringify(updatedCardData)
-      );
-    }
-  };
   return (
     <div className="flex flex-col items-start rounded bg-gray-100 w-96 p-2 mr-16">
       <p className="text-black text-lg not-italic font-semibold capitalize">
         {title}
       </p>
-      {cardData.map((item) => (
-        <Cards
-          key={item.id}
-          note={item.note}
-          personName={item.personName}
-          imgUrl={item.imgUrl}
-          id={item.id}
-          onRemove={removeCard}
-        />
-      ))}
+            {task
+              ? task.map((item, index) => (
+                  <Cards key={index} tasks={item} index={index} onRemove={() => removeCard(item.id, title)}  />
+                ))
+              : null}
       <button
         onClick={openModal}
         className="bg-transparent w-full hover:bg-slate-300 flex justify-start p-2 text-sm font-semibold mt-4"
@@ -70,7 +38,7 @@ const List = ({ title }) => {
             <button onClick={closeModal} className="absolute top-0 right-0 m-2">
               <Close />
             </button>
-            <AddForm onAddCard={addCard} closeModal={closeModal} />
+            <AddForm onAddCard={(card) => addNewCard(card, title)} closeModal={closeModal} />
           </div>
         </div>
       )}
