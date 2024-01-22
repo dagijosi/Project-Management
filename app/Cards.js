@@ -4,6 +4,14 @@ import { Draggable } from "react-beautiful-dnd";
 
 const Cards = ({tasks,index,onRemove}) => {
   return (
+    <Draggable draggableId={tasks.id} key={tasks.id} index={index}>
+      {(provided, snapshot) => (
+        <div
+        {...provided.draggableProps}
+        {...provided.dragHandleProps}
+        ref={provided.innerRef}
+        isDragging={snapshot.isDragging}
+      >
     <div className="p-2 w-full bg-white mt-3">
       <div className="flex flex-row w-full">
         <img src={tasks.imgUrl} className="w-12 h-12 rounded-full mr-2" />
@@ -27,6 +35,10 @@ const Cards = ({tasks,index,onRemove}) => {
         </div>
       </div>
     </div>
+    {provided.placeholder}
+        </div>
+      )}
+    </Draggable>
   );
 };
 

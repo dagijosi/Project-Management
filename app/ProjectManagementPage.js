@@ -1,32 +1,17 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import List from "./List";
-import { DragDropContext } from "react-beautiful-dnd";
+import { DragDropContext, Droppable } from "react-beautiful-dnd";
+
+const getInitialCards = (key) => {
+  const savedCards = localStorage.getItem(key);
+  return savedCards ? JSON.parse(savedCards) : [];
+};
 
 const ProjectManagementPage = () => {
-  const [todoCards, setTodoCards] = useState(() => {
-    if (typeof window !== "undefined") {
-      const savedTodoCards = localStorage.getItem("todoCards");
-      return savedTodoCards ? JSON.parse(savedTodoCards) : [];
-    }
-    return [];
-  });
-
-  const [inProgressCards, setInProgressCards] = useState(() => {
-    if (typeof window !== "undefined") {
-      const savedInProgressCards = localStorage.getItem("inProgressCards");
-      return savedInProgressCards ? JSON.parse(savedInProgressCards) : [];
-    }
-    return [];
-  });
-  const [doneCards, setDoneCards] = useState(() => {
-    if (typeof window !== "undefined") {
-      const savedDoneCards = localStorage.getItem("doneCards");
-      return savedDoneCards ? JSON.parse(savedDoneCards) : [];
-    }
-    return [];
-  });
-
+  const todoCards = getInitialCards("todoCards");
+  const inProgressCards = getInitialCards("inProgressCards");
+  const doneCards = getInitialCards("doneCards");
   const [board, setBoard] = useState([
     { id: "1", title: "TODO", items: todoCards },
     { id: "2", title: "IN PROGRESS", items: inProgressCards },
@@ -39,75 +24,81 @@ const ProjectManagementPage = () => {
     localStorage.setItem("doneCards", JSON.stringify(doneCards));
   }, [todoCards, inProgressCards, doneCards]);
 
-  const addNewCard = (newCard, listTitle) => {
-    if (listTitle === "TODO") {
-      const maxId = Math.max(...todoCards.map((card) => card.id), 0);
-      newCard.id = String(maxId + 1);
-      localStorage.setItem(
-        "todoCards",
-        JSON.stringify([...todoCards, newCard])
-      );
-      setTodoCards(JSON.parse(localStorage.getItem("todoCards")));
-    } else if (listTitle === "IN PROGRESS") {
-      const maxId = Math.max(...inProgressCards.map((card) => card.id), 0);
-      newCard.id = String(maxId + 1);
-      localStorage.setItem(
-        "inProgressCards",
-        JSON.stringify([...inProgressCards, newCard])
-      );
-      setInProgressCards(JSON.parse(localStorage.getItem("inProgressCards")));
-    } else if (listTitle === "DONE") {
-      const maxId = Math.max(...doneCards.map((card) => card.id), 0);
-      newCard.id = String(maxId + 1);
-      localStorage.setItem(
-        "doneCards",
-        JSON.stringify([...doneCards, newCard])
-      );
-      setDoneCards(JSON.parse(localStorage.getItem("doneCards")));
-    }
-    // Update the board with the new card
-setBoard(
-  board.map((boardItem) => {
-     if (boardItem.title === listTitle) {
-       return {
-         ...boardItem,
-         items: listTitle === "TODO" ? todoCards : listTitle === "IN PROGRESS" ? inProgressCards : doneCards,
-       };
-     }
-     return boardItem;
-  })
- );
-  };
-  const removeCard = (cardId, listTitle) => {
-    let updatedCards;
-    if (listTitle === "TODO") {
-      updatedCards = todoCards.filter((card) => card.id !== cardId);
-      setTodoCards(updatedCards);
-      localStorage.setItem("todoCards", JSON.stringify(updatedCards));
-    } else if (listTitle === "IN PROGRESS") {
-      updatedCards = inProgressCards.filter((card) => card.id !== cardId);
-      setInProgressCards(updatedCards);
-      localStorage.setItem("inProgressCards", JSON.stringify(updatedCards));
-    } else if (listTitle === "DONE") {
-      updatedCards = doneCards.filter((card) => card.id !== cardId);
-      setDoneCards(updatedCards);
-      localStorage.setItem("doneCards", JSON.stringify(updatedCards));
+  const updateLocalStorage = useCallback((key, items) => {
+    localStorage.setItem(key, JSON.stringify(items));
+  }, []);
+
+  const addNewCard = useCallback(
+    (newCard, listTitle) => {
+      setBoard((prevBoard) => {
+        return prevBoard.map((boardItem) => {
+          if (boardItem.title === listTitle) {
+            const maxId = Math.max(
+              ...boardItem.items.map((card) => card.id),
+              0
+            );
+            newCard.id = String(maxId + 1);
+            const updatedItems = [...boardItem.items, newCard];
+            updateLocalStorage(`${listTitle.toLowerCase()}Cards`, updatedItems);
+            return { ...boardItem, items: updatedItems };
+          }
+          return boardItem;
+        });
+      });
+    },
+    [updateLocalStorage]
+  );
+
+  const removeCard = useCallback(
+    (cardId, listTitle) => {
+      setBoard((prevBoard) => {
+        return prevBoard.map((boardItem) => {
+          if (boardItem.title === listTitle) {
+            const updatedItems = boardItem.items.filter(
+              (card) => card.id !== cardId
+            );
+            updateLocalStorage(`${listTitle.toLowerCase()}Cards`, updatedItems);
+            return { ...boardItem, items: updatedItems };
+          }
+          return boardItem;
+        });
+      });
+    },
+    [updateLocalStorage]
+  );
+
+  const onDragEnd = (result) => {
+    const { source, destination, draggableId } = result;
+
+    if (!destination) {
+      return; // Card dropped outside any droppable area
     }
 
-    // Update the board without the removed card
-    setBoard(
-      board.map((boardItem) => {
-        if (boardItem.title === listTitle) {
-          return {
-            ...boardItem,
-            items: updatedCards,
-          };
+    const sourceList = board.find((item) => item.id === source.droppableId);
+    const destinationList = board.find((item) => item.id === destination.droppableId);
+
+    const updatedSourceItems = Array.from(sourceList.items);
+    updatedSourceItems.splice(source.index, 1);
+
+    const updatedDestinationItems = Array.from(destinationList.items);
+    updatedDestinationItems.splice(destination.index, 0, draggableId);
+
+    setBoard((prevBoard) => {
+      return prevBoard.map((boardItem) => {
+        if (boardItem.id === sourceList.id) {
+          return { ...boardItem, items: updatedSourceItems };
+        }
+        if (boardItem.id === destinationList.id) {
+          return { ...boardItem, items: updatedDestinationItems };
         }
         return boardItem;
-      })
-    );
+      });
+    });
   };
+
+
   return (
+    <DragDropContext onDragEnd={onDragEnd}>
       <div className="bg-blue-500 h-screen p-4">
         <div className="ml-6">
           <p className="text-3xl not-italic font-semibold text-white mb-4">
@@ -115,18 +106,19 @@ setBoard(
           </p>
           <div className="flex flex-row">
             {board.map((item, index) => (
-              <List
-                key={index}
-                title={item.title}
-                task={item.items}
-                id={item.id}
-                addNewCard={addNewCard}
-                removeCard={removeCard}
-              />
+                  <List
+                    key={index}
+                    title={item.title}
+                    task={item.items}
+                    id={item.id}
+                    addNewCard={addNewCard}
+                    removeCard={removeCard}
+                  />
             ))}
           </div>
         </div>
       </div>
+    </DragDropContext>
   );
 };
 
