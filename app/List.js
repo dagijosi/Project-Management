@@ -1,9 +1,12 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Cards from "./Cards";
 import { Add, Close } from "@mui/icons-material";
 import AddForm from "./AddForm";
+import { Droppable } from "react-beautiful-dnd";
+
 const List = ({ title }) => {
+  
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const openModal = () => {
     setModalIsOpen(true);
@@ -12,20 +15,32 @@ const List = ({ title }) => {
   const closeModal = () => {
     setModalIsOpen(false);
   };
-  const [cardData, setCardData] = useState([
-    {
-      id: 1,
-      note: "Sucking at something is the step towards being sorta good at something.",
-      personName: "Jake",
-      imgUrl: "/image/Profile_pic.png",
-    },
-  ]);
+  const [cardData, setCardData] = useState([]);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedData = localStorage.getItem(`${title}_cardData`);
+      setCardData(savedData ? JSON.parse(savedData) : []);
+    }
+ }, []);
 
   const addCard = (newCard) => {
-    setCardData([...cardData, newCard]);
+    const maxId = Math.max(...cardData.map((card) => card.id), 0);
+    newCard.id = maxId + 1;
+    setCardData((prevCardData) => {
+      const newCardData = [...prevCardData, newCard];
+      localStorage.setItem(`${title}_cardData`, JSON.stringify(newCardData));
+      return newCardData;
+    });
   };
   const removeCard = (id) => {
     setCardData(cardData.filter((item) => item.id !== id));
+    const updatedCardData = cardData.filter((item) => item.id !== id);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        `${title}_cardData`,
+        JSON.stringify(updatedCardData)
+      );
+    }
   };
   return (
     <div className="flex flex-col items-start rounded bg-gray-100 w-96 p-2 mr-16">

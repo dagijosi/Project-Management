@@ -1,0 +1,8 @@
+  const [cardData, setCardData] = useState([
+    {
+      id: 1,
+      note: "Sucking at something is the step towards being sorta good at something.",
+      personName: "Jake",
+      imgUrl: "/image/Profile_pic.png",
+    },
+  ]);
